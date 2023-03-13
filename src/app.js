@@ -3,12 +3,15 @@ dotenv.config()
 import express from 'express'
 import bodyParser from "body-parser";
 import {connectDB} from './config/database.js'
+import cors from 'cors'
+
 
 import usersRouter from './routers/user.js'
 import productsRouter from './routers/product.js'
 import auth from './helper/auth.js';
 
 const app = express()
+app.use(cors({credentials: true, origin: true}))
 app.use(express.static('src/public'))
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));

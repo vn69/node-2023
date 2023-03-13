@@ -22,12 +22,12 @@ const helper = {
                     }  
                     
                 } catch (error) {
-                    res.status(400).json({
+                    res.status(403).json({
                         message: error
                     })
                 }
             } else {
-                res.status(400).json({
+                res.status(403).json({
                     message: 'Token is missing'
                 })
             }
