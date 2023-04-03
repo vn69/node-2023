@@ -1,153 +1,68 @@
 import userModel from "../models/user.js";
-import { body, validationResult } from "express-validator";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
-const userController = {
-  getAllUsers: async (req, res) => {
-    try {
-      const data = await userModel.find({});
-      res.json({
-        message: "ok",
-        data,
-      });
-    } catch (error) {
-      res.status(500).json({ message: "error", error: error });
+export const updateUserPassword = async (req, res) => {
+  const { password , newPassword } = req.body;
+  const {userId} = req.user;
+  console.log("req:::::", { password, newPassword, userId });
+  try {
+    if (!password || !newPassword) {
+      throw new Error("Please provide all fields");
     }
-  },
-  getUserByID: async (req, res) => {
-    try {
-      const userId = req.params.id;
-      const data = await userModel.findById(userId).exec();
-      res.json({
-        message: "ok",
-        data,
-      });
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({ message: "error", error: error });
+    if (password === newPassword) {
+      throw new Error("Please set the new password differently than the old one");
     }
-  },
-  createUser: async (req, res) => {
-    // validate
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: "error",
-        error: errors.array(),
-      });
+    const user = await userModel.findOne({_id: userId});
+    const checkPassword = bcrypt.compareSync(password, user.password);
+    if (!checkPassword) {
+      throw new Error("wrong password");
     }
-
-    const { name, email, password } = req.body;
-    if (!!name && !!email && !!password) {
-      try {
-        const user = await userModel.findOne({ email }).exec();
-        if (user) {
-          return res.status(200).json({
-            message: "error",
-            error: "User existed",
-          });
-        }
-        const pwHash = bcrypt.hashSync(password, +process.env.SALT_ROUNDS);
-        const data = await userModel.create({ name, email, password: pwHash });
-        data.password = "not show";
-        res.json({
-          message: "ok",
-          data: data,
-        });
-      } catch (error) {
-        res.status(500).json({ message: "error", error: error });
-      }
-    } else {
-      res
-        .status(200)
-        .json({ message: "error", error: "Please fill all fields" });
-    }
-  },
-  loginUser: async (req, res) => {
-    console.log("login", req.body);
-    // validate
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: "error",
-        error: errors.array(),
-      });
-    }
-    const { email, password } = req.body;
-    try {
-      const user = await userModel.findOne({ email }).exec();
-      if (!user) {
-        return res.status(200).json({
-          message: "error",
-          error: "User not exist",
-        });
-      } else {
-        const isPw = bcrypt.compareSync(password, user.password);
-        if (isPw) {
-          const token = jwt.sign(
-            {
-              data: user,
-            },
-            process.env.SECRET_KEY,
-            { expiresIn: "1 day" }
-          );
-          return res.status(200).json({
-            message: "ok",
-            data: {
-              token,
-            },
-          });
-        } else {
-          return res.status(200).json({
-            message: "error",
-            error: "Wrong password",
-          });
-        }
-      }
-    } catch (error) {}
-    //  bcrypt.compareSync(myPlaintextPassword, hash); // true
-  },
-  editUser: async (req, res) => {
-    // validate
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: "error",
-        error: errors.array(),
-      });
-    }
-
-    const { _id, name, email, password } = req.body;
-
-    try {
-      const user = await userModel.findById(_id).exec();
-      if (user && user._id) {
-        const userUpdate = await userModel.updateOne({ name, email, password });
-        res.status(200).json({ message: "ok" });
-      } else {
-        res.status(404).json({ message: "error", error: "User not found" });
-      }
-    } catch (error) {
-      console.log(error);
-      res.status(404).json({ message: "error", error: error });
-    }
-  },
-  deleteUser: async (req, res) => {
-    const { _id } = req.body;
-    try {
-      const user = await userModel.findById(_id).exec();
-      if (user && user._id) {
-        const deleteV = await userModel.deleteOne({ _id });
-        res.status(200).json({ message: "ok", value: deleteV });
-      } else {
-        res.status(404).json({ message: "error", error: "User not found" });
-      }
-    } catch (error) {
-      console.log(error);
-      res.status(404).json({ message: "error", error: error });
-    }
-  },
+    const pwHash = bcrypt.hashSync(newPassword, +process.env.SALT_ROUNDS);
+    const userUpdate = await userModel.findOneAndUpdate({_id: userId},{password: pwHash});
+    userUpdate.password = "not show"
+    console.log("userUpdate::::::; ", userUpdate);
+    res.status(200).json({
+      success: true,
+      data: userUpdate,
+    });
+  } catch (error) {
+    console.log("error::::::::", error.message);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
-export default userController;
+export const getAllUsers = async (req, res) => {
+  const users = await userModel.find({ role: 'user' }).select('-password');
+  res.status(200).json({
+    success: true,
+    data: users
+  });
+};
+
+
+export const showMe = async (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: req.user
+  });
+};
+
+export const getUserById = async (req, res) => {
+  const userId = req.params.id
+  console.log("userId::::::", userId);
+  try {
+    const user = await userModel.findById(userId).select("-password");
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "user not found",
+    })
+  }
+};

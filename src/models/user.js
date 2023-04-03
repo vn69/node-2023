@@ -1,15 +1,35 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+import validator from "validator";
+
 const { Schema } = mongoose;
 
-const userSchema = new Schema({
-  name:  String,
-  email: String,
-  password:   String,
-}, {
-  timestamps: {
-    createdAt: 'created_at', // Use `created_at` to store the created date
-    updatedAt: 'updated_at' // and `updated_at` to store the last updated date
-    }
-});
+const userSchema = new Schema(
+  {
+    email: {
+      type: String,
+      required: [true, "Please provide email"],
+      unique: true,
+      validate: {
+        validator: validator.isEmail,
+        message: "Please provide valid email",
+      },
+    },
+    password: {
+      type: String,
+      required: [true, "Please provide password"],
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'user'],
+      default: 'user',
+    },
+  },
+  {
+    timestamps: {
+      createdAt: "created_at", // Use `created_at` to store the created date
+      updatedAt: "updated_at", // and `updated_at` to store the last updated date
+    },
+  }
+);
 
-export default mongoose.model('user', userSchema);
+export default mongoose.model("user", userSchema);
