@@ -5,7 +5,8 @@ const productSchema = new Schema(
   {
     name: {
       type: String,
-      trim: true,
+      unique: true,
+      index: true,
       required: [true, "Please provide product name"],
       maxlength: [100, "Name can not be more than 100 characters"],
     },
@@ -16,7 +17,7 @@ const productSchema = new Schema(
     },
     price: {
       type: Number,
-      required: [true, 'Please provide product price'],
+      required: [true, "Please provide product price"],
       default: 0,
     },
     image: {
@@ -29,7 +30,7 @@ const productSchema = new Schema(
     },
     quantity: {
       type: Number,
-      required: [true, 'Please provide product quantity'],
+      required: [true, "Please provide product quantity"],
       default: 0,
     },
   },
