@@ -3,11 +3,17 @@ import productModel from "../models/product.js";
 export const getAllProduct = async (req, res) => {
   console.log("req:::::", req.query);
   try {
-    const { page = 1, pageSize = 5 } = req.query;
+    const { page = 1, pageSize = 5, search = "" } = req.query;
     const skip = (page - 1) * pageSize;
-    const totalProduct = await productModel.find({}).countDocuments();
+    const query = {};
+    const textSearch = search.trim();
+    if (textSearch) {
+      query.name = new RegExp(textSearch, "i");
+    }
+    const totalProduct = await productModel.find(query).countDocuments();
     const products = await productModel
-      .find({})
+      .find(query)
+      .sort({ created_at: -1 })
       .skip(skip)
       .limit(pageSize)
       .exec();
@@ -77,7 +83,7 @@ export const updateProductById = async (req, res) => {
   try {
     console.log("req:::::updateProductById", req.body, req.params.id);
     const { name, description, price, image, category, quantity } = req.body;
-    const updateData = { name, description, price, image, category, quantity }
+    const updateData = { name, description, price, image, category, quantity };
 
     const productFinded = await productModel.findById(req.params.id);
     if (!productFinded) {
@@ -87,7 +93,7 @@ export const updateProductById = async (req, res) => {
       { _id: req.params.id },
       updateData
     );
-    updateData._id = req.params.id
+    updateData._id = req.params.id;
     res.status(200).json({
       success: true,
       data: updateData,
